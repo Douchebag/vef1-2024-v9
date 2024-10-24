@@ -50,9 +50,18 @@ const locations = [
  * @param {Element} element
  */
 function renderIntoResultsContent(element) {
+  const loadingElement = document.querySelector('.loading');
+  loadingElement.classList.add('hidden');
   // TODO útfæra
+  const resultsNameElement = document.querySelector('.results__location');
+  const resultsTextElement = document.querySelector('.results p');
+  const tableElement = document.querySelector('.forecast tbody');
+  resultsNameElement.textContent = '';
+  resultsTextElement.textContent = '';
+  tableElement.textContent = '';
 
-
+  const resultsElement = document.querySelector('.results');
+  resultsElement.classList.remove('hidden');
 }
 
 /**
@@ -61,16 +70,17 @@ function renderIntoResultsContent(element) {
  * @param {Array<import('./lib/weather.js').Forecast>} results
  */
 function renderResults(location, results) {
+  renderIntoResultsContent(document.querySelector('.results'));
+
   // TODO útfæra
   console.log('render results', location, results);
   const resultsNameElement = document.querySelector('.results__location');
   const resultsTextElement = document.querySelector('.results p');
-  //resultsNameElement.textContent = location.title;
   resultsNameElement.appendChild(document.createTextNode(location.title));
   resultsTextElement.appendChild(document.createTextNode('Spá fyrir daginn a breiddargráðu ' + location.lat
     + ' og lengdargráðu ' + location.lng));
 
-  const tableElement = document.querySelector('.results__table');
+  const tableElement = document.querySelector('.forecast tbody');
 
   const timeArray = results.hourly.time;
   const temperatureArray = results.hourly.temperature_2m;
@@ -89,11 +99,6 @@ function renderResults(location, results) {
     tableRowElement.appendChild(tablePrecipitationElement);
     tableElement.appendChild(tableRowElement);
   }
-
-  // third row in table
-
-  const resultsElement = document.querySelector('.results');
-  resultsElement.classList.remove('results--hidden');
 }
 
 /**
@@ -110,6 +115,10 @@ function renderError(error) {
 function renderLoading() {
   console.log('render loading');
   // TODO útfæra
+  const resultsElement = document.querySelector('.results');
+  resultsElement.classList.add('hidden');
+  const loadingElement = document.querySelector('.loading');
+  loadingElement.classList.remove('hidden');
 }
 
 /**
@@ -129,8 +138,9 @@ async function onSearch(location) {
   // TODO útfæra
   // Hér ætti að birta og taka tillit til mismunandi staða meðan leitað er.
 
-  renderResults(location, results);
-
+  if (results) {
+    renderResults(location, results);
+  }
 }
 
 /**
@@ -139,6 +149,22 @@ async function onSearch(location) {
  */
 async function onSearchMyLocation() {
   // TODO útfæra
+  console.log('onSearchMyLocation');
+  navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+    if (result.state === 'granted' || result.state === 'prompt') {
+      navigator.geolocation.getCurrentPosition((position) => {
+        console.log(position.coords.latitude, position.coords.longitude);
+        onSearch({
+          title: 'Mín staðsetning',
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
+    } else if (result.state === 'denied') {
+      console.log('Permission denied');
+      renderError(result.state);
+    }
+  });
 }
 
 /**
@@ -211,10 +237,13 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   // <div class="loctions"><ul class="locations__list"></ul></div>
   locationsElement.appendChild(locationsListElement);
 
+  const liButtonElement = renderLocationButton('Mín staðsetning (þarf leyfi)', onSearchMyLocation);
+  locationsListElement.appendChild(liButtonElement);
+
   // <div class="loctions"><ul class="locations__list"><li><li><li></ul></div>
   for (const location of locations) {
     const liButtonElement = renderLocationButton(location.title, () => {
-      console.log('Halló!!', location);
+      //console.log('Halló!!', location);
       onSearch(location);
     });
     locationsListElement.appendChild(liButtonElement);
@@ -224,9 +253,19 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
   // TODO útfæra niðurstöðu element
 
+  const loadingElement = document.createElement('div');
+  loadingElement.classList.add('loading');
+  parentElement.appendChild(loadingElement);
+
+  const loadingTextElement = document.createElement('p');
+  loadingTextElement.appendChild(document.createTextNode('Leita að veðri...'));
+  loadingElement.appendChild(loadingTextElement);
+
+  loadingElement.classList.add('hidden');
+
   const resultsElement = document.createElement('div');
   resultsElement.classList.add('results');
-  resultsElement.classList.add('results--hidden');
+  resultsElement.classList.add('hidden');
   parentElement.appendChild(resultsElement);
 
   // results fyrirsogn
@@ -245,9 +284,8 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
   // table fyrir nidurstodur
   const tableElement = document.createElement('table');
-  tableElement.classList.add('results__table');
+  tableElement.classList.add('forecast');
   resultsElement.appendChild(tableElement);
-  tableElement.classList.add('.hidden');
   const tableHeadElement = document.createElement('thead');
   const tableRowElement = document.createElement('tr');
   const tableHeadTimeElement = document.createElement('th');
@@ -256,9 +294,7 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   tableHeadTimeElement.appendChild(document.createTextNode('Tími'));
   tableHeadElement.style.textAlign = 'left';
   tableHeadTemperatureElement.appendChild(document.createTextNode('Hiti (°C)'));
-  tableHeadTemperatureElement.style.textAlign = 'left';
   tableHeadPrecipitationElement.appendChild(document.createTextNode('Úrkoma (mm)'));
-  tableHeadPrecipitationElement.style.textAlign = 'left';
   tableRowElement.appendChild(tableHeadTimeElement);
   tableRowElement.appendChild(tableHeadTemperatureElement);
   tableRowElement.appendChild(tableHeadPrecipitationElement);
