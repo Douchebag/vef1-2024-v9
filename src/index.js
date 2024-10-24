@@ -54,14 +54,16 @@ function renderIntoResultsContent(element) {
   loadingElement.classList.add('hidden');
   // TODO útfæra
   const resultsNameElement = document.querySelector('.results__location');
-  const resultsTextElement = document.querySelector('.results p');
-  const tableElement = document.querySelector('.forecast tbody');
+  const resultsTextElement = document.querySelector('.results__text');
+  const tableBodyElement = document.querySelector('.forecast tbody');
+  const tableElement = document.querySelector('.forecast');
   resultsNameElement.textContent = '';
   resultsTextElement.textContent = '';
-  tableElement.textContent = '';
+  tableBodyElement.textContent = '';
 
-  const resultsElement = document.querySelector('.results');
-  resultsElement.classList.remove('hidden');
+  resultsNameElement.classList.remove('hidden');
+  resultsTextElement.classList.remove('hidden');
+  tableElement.classList.remove('hidden');
 }
 
 /**
@@ -75,7 +77,7 @@ function renderResults(location, results) {
   // TODO útfæra
   console.log('render results', location, results);
   const resultsNameElement = document.querySelector('.results__location');
-  const resultsTextElement = document.querySelector('.results p');
+  const resultsTextElement = document.querySelector('.results__text');
   resultsNameElement.appendChild(document.createTextNode(location.title));
   resultsTextElement.appendChild(document.createTextNode('Spá fyrir daginn a breiddargráðu ' + location.lat
     + ' og lengdargráðu ' + location.lng));
@@ -107,6 +109,18 @@ function renderResults(location, results) {
  */
 function renderError(error) {
   // TODO útfæra
+  //console.log('render error', error);
+  if (error = 'denied') {
+    //console.log('render error', error);
+    renderLoading();
+    const loadingTextElement = document.querySelector('.results .loading');
+    const resultsHeadingElement = document.querySelector('.results h2');
+    const resultsTextElement = document.querySelector('.results .results__text');
+    resultsHeadingElement.classList.remove('hidden');
+    resultsTextElement.classList.remove('hidden');
+    loadingTextElement.classList.add('hidden');
+    resultsTextElement.textContent = "Gat ekki sótt stadsetningu";
+  }
 }
 
 /**
@@ -115,10 +129,18 @@ function renderError(error) {
 function renderLoading() {
   console.log('render loading');
   // TODO útfæra
-  const resultsElement = document.querySelector('.results');
-  resultsElement.classList.add('hidden');
-  const loadingElement = document.querySelector('.loading');
-  loadingElement.classList.remove('hidden');
+  const resultsHeadingElement = document.querySelector('.results h2');
+  const loadingTextElement = document.querySelector('.results .loading');
+
+  resultsHeadingElement.classList.remove('hidden');
+  loadingTextElement.classList.remove('hidden');
+
+  const tableElement = document.querySelector('.forecast');
+  const resultsTextElement = document.querySelector('.results__text');
+  const resultsLocationElement = document.querySelector('.results__location');
+  tableElement.classList.add('hidden');
+  resultsTextElement.classList.add('hidden');
+  resultsLocationElement.classList.add('hidden');
 }
 
 /**
@@ -140,6 +162,8 @@ async function onSearch(location) {
 
   if (results) {
     renderResults(location, results);
+  } else {
+    renderError('Villa við að sækja veðrið');
   }
 }
 
@@ -148,21 +172,31 @@ async function onSearch(location) {
  * Biður notanda um leyfi gegnum vafra.
  */
 async function onSearchMyLocation() {
-  // TODO útfæra
   console.log('onSearchMyLocation');
+
+  // Check the permission state before requesting location
   navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+    console.log('Initial permission state:', result.state);
+
+    // Handle 'granted' or 'prompt' states
     if (result.state === 'granted' || result.state === 'prompt') {
-      navigator.geolocation.getCurrentPosition((position) => {
-        console.log(position.coords.latitude, position.coords.longitude);
-        onSearch({
-          title: 'Mín staðsetning',
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      });
-    } else if (result.state === 'denied') {
-      console.log('Permission denied');
-      renderError(result.state);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log('Geolocation success', position.coords.latitude, position.coords.longitude);
+          onSearch({
+            title: 'Mín staðsetning',
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.log('Geolocation error:', error.message);
+          if (error.code === error.PERMISSION_DENIED) {
+            console.log('User denied geolocation request.');
+            renderError('Permission denied');
+          }
+        }
+      );
     }
   });
 }
@@ -212,7 +246,7 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   // Búum til <header> með beinum DOM aðgerðum
   const headerElement = document.createElement('header');
   const heading = document.createElement('h1');
-  heading.appendChild(document.createTextNode('Veðrið'));
+  heading.appendChild(document.createTextNode('🌬Veðrið⛄'));
   headerElement.appendChild(heading);
   parentElement.appendChild(headerElement);
 
@@ -251,36 +285,36 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
   parentElement.appendChild(locationsElement);
 
-  // TODO útfæra niðurstöðu element
-
-  const loadingElement = document.createElement('div');
-  loadingElement.classList.add('loading');
-  parentElement.appendChild(loadingElement);
-
-  const loadingTextElement = document.createElement('p');
-  loadingTextElement.appendChild(document.createTextNode('Leita að veðri...'));
-  loadingElement.appendChild(loadingTextElement);
-
-  loadingElement.classList.add('hidden');
-
+  // results div
   const resultsElement = document.createElement('div');
   resultsElement.classList.add('results');
-  resultsElement.classList.add('hidden');
+
   parentElement.appendChild(resultsElement);
 
   // results fyrirsogn
   const resultsHeadingElement = document.createElement('h2');
   resultsHeadingElement.appendChild(document.createTextNode('Niðurstöður'));
   resultsElement.appendChild(resultsHeadingElement);
+  resultsHeadingElement.classList.add('hidden');
+
+  // loading texti
+  const loadingTextElement = document.createElement('p');
+  loadingTextElement.appendChild(document.createTextNode('Leita að veðri...'));
+  resultsElement.appendChild(loadingTextElement);
+  loadingTextElement.classList.add('hidden');
+  loadingTextElement.classList.add('loading');
 
   // h3 nafn á völdum stað
   const resultsLocationNameElement = document.createElement('h3');
   resultsLocationNameElement.classList.add('results__location');
   resultsElement.appendChild(resultsLocationNameElement);
+  resultsLocationNameElement.classList.add('hidden');
 
   // results text
   const resultsTextElement = document.createElement('p');
   resultsElement.appendChild(resultsTextElement);
+  resultsTextElement.classList.add('hidden');
+  resultsTextElement.classList.add('results__text');
 
   // table fyrir nidurstodur
   const tableElement = document.createElement('table');
@@ -303,6 +337,7 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
   const tableBodyElement = document.createElement('tbody');
   tableElement.appendChild(tableBodyElement);
+  tableElement.classList.add('hidden');
 
   container.appendChild(parentElement);
 }
