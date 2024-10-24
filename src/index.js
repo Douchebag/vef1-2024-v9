@@ -51,6 +51,8 @@ const locations = [
  */
 function renderIntoResultsContent(element) {
   // TODO útfæra
+
+
 }
 
 /**
@@ -60,6 +62,38 @@ function renderIntoResultsContent(element) {
  */
 function renderResults(location, results) {
   // TODO útfæra
+  console.log('render results', location, results);
+  const resultsNameElement = document.querySelector('.results__location');
+  const resultsTextElement = document.querySelector('.results p');
+  //resultsNameElement.textContent = location.title;
+  resultsNameElement.appendChild(document.createTextNode(location.title));
+  resultsTextElement.appendChild(document.createTextNode('Spá fyrir daginn a breiddargráðu ' + location.lat
+    + ' og lengdargráðu ' + location.lng));
+
+  const tableElement = document.querySelector('.results__table');
+
+  const timeArray = results.hourly.time;
+  const temperatureArray = results.hourly.temperature_2m;
+  const precipitationArray = results.hourly.precipitation;
+
+  for (let i = 0; i < timeArray.length; i++) {
+    const tableRowElement = document.createElement('tr');
+    const tableTimeElement = document.createElement('td');
+    const tableTemperatureElement = document.createElement('td');
+    const tablePrecipitationElement = document.createElement('td');
+    tableTimeElement.appendChild(document.createTextNode(timeArray[i].substring(11, 16)));
+    tableTemperatureElement.appendChild(document.createTextNode(temperatureArray[i]));
+    tablePrecipitationElement.appendChild(document.createTextNode(precipitationArray[i]));
+    tableRowElement.appendChild(tableTimeElement);
+    tableRowElement.appendChild(tableTemperatureElement);
+    tableRowElement.appendChild(tablePrecipitationElement);
+    tableElement.appendChild(tableRowElement);
+  }
+
+  // third row in table
+
+  const resultsElement = document.querySelector('.results');
+  resultsElement.classList.remove('results--hidden');
 }
 
 /**
@@ -94,6 +128,9 @@ async function onSearch(location) {
   console.log(results);
   // TODO útfæra
   // Hér ætti að birta og taka tillit til mismunandi staða meðan leitað er.
+
+  renderResults(location, results);
+
 }
 
 /**
@@ -149,11 +186,20 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   // Búum til <header> með beinum DOM aðgerðum
   const headerElement = document.createElement('header');
   const heading = document.createElement('h1');
-  heading.appendChild(document.createTextNode('<fyrirsögn>'));
+  heading.appendChild(document.createTextNode('Veðrið'));
   headerElement.appendChild(heading);
   parentElement.appendChild(headerElement);
 
-  // TODO útfæra inngangstexta
+  // inngangstexti
+  const descriptionElement = document.createElement('p');
+  descriptionElement.appendChild(document.createTextNode('Veldu stað til að sjá hita- og úrkomuspá.'));
+  parentElement.appendChild(descriptionElement);
+
+  // stadsetningar fyrirsogn
+  const stadsetningarElement = document.createElement('h2');
+  stadsetningarElement.appendChild(document.createTextNode('Staðsetningar'));
+  parentElement.appendChild(stadsetningarElement);
+
   // Búa til <div class="loctions">
   const locationsElement = document.createElement('div');
   locationsElement.classList.add('locations');
@@ -177,6 +223,50 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   parentElement.appendChild(locationsElement);
 
   // TODO útfæra niðurstöðu element
+
+  const resultsElement = document.createElement('div');
+  resultsElement.classList.add('results');
+  resultsElement.classList.add('results--hidden');
+  parentElement.appendChild(resultsElement);
+
+  // results fyrirsogn
+  const resultsHeadingElement = document.createElement('h2');
+  resultsHeadingElement.appendChild(document.createTextNode('Niðurstöður'));
+  resultsElement.appendChild(resultsHeadingElement);
+
+  // h3 nafn á völdum stað
+  const resultsLocationNameElement = document.createElement('h3');
+  resultsLocationNameElement.classList.add('results__location');
+  resultsElement.appendChild(resultsLocationNameElement);
+
+  // results text
+  const resultsTextElement = document.createElement('p');
+  resultsElement.appendChild(resultsTextElement);
+
+  // table fyrir nidurstodur
+  const tableElement = document.createElement('table');
+  tableElement.classList.add('results__table');
+  resultsElement.appendChild(tableElement);
+  tableElement.classList.add('.hidden');
+  const tableHeadElement = document.createElement('thead');
+  const tableRowElement = document.createElement('tr');
+  const tableHeadTimeElement = document.createElement('th');
+  const tableHeadTemperatureElement = document.createElement('th');
+  const tableHeadPrecipitationElement = document.createElement('th');
+  tableHeadTimeElement.appendChild(document.createTextNode('Tími'));
+  tableHeadElement.style.textAlign = 'left';
+  tableHeadTemperatureElement.appendChild(document.createTextNode('Hiti (°C)'));
+  tableHeadTemperatureElement.style.textAlign = 'left';
+  tableHeadPrecipitationElement.appendChild(document.createTextNode('Úrkoma (mm)'));
+  tableHeadPrecipitationElement.style.textAlign = 'left';
+  tableRowElement.appendChild(tableHeadTimeElement);
+  tableRowElement.appendChild(tableHeadTemperatureElement);
+  tableRowElement.appendChild(tableHeadPrecipitationElement);
+  tableHeadElement.appendChild(tableRowElement);
+  tableElement.appendChild(tableHeadElement);
+
+  const tableBodyElement = document.createElement('tbody');
+  tableElement.appendChild(tableBodyElement);
 
   container.appendChild(parentElement);
 }
